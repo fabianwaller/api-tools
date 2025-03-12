@@ -49,7 +49,7 @@ def extract_mugs(output):
     return result
 
 def run_problem(command):
-    print(f"Executing command: {command}")
+    print(command)
     
     try:
         result = subprocess.run(
@@ -65,7 +65,7 @@ def run_problem(command):
             print("Error occurred:")
             print(result.stderr)
         else:
-            print(f"Command executed successfully (Code {result.returncode})")
+            # print(f"Command executed successfully (Code {result.returncode})")
             # print(result.stdout)
             search_time = extract_search_time(result.stdout)
             if search_time:
@@ -90,13 +90,12 @@ sys.stdout.flush()
 
 # Path to fast-downward.py
 FAST_DOWNWARD_PATH = "/Users/fabianwaller/Developer/symbolic-xaip/fast-downward.py"
-# Path to preferences file
-PREFERENCES_PATH = "/Users/fabianwaller/Developer/symbolic-xaip/problems/preferences.json"
 
 # 12 is the collection for all STRIPS IPC domains
 domains = {}
+# print(json.dumps(api.get_collections("classical"), indent=4))
 # get all domains
-for dom in api.get_domains(12, "classical"):
+for dom in api.get_domains(9, "classical"):
     # print(json.dumps(dom, indent=4))
     print(dom["domain_name"])
 # Get a single domain
@@ -125,14 +124,21 @@ for dom in api.get_domains(12, "classical"):
         print(f"Running fast-downward for:")
         print(f"Domain: {domain_path}")
         print(f"Problem: {problem_path}")
-
-        bound = 0.75*lower_bound
         
-        normal = f"{FAST_DOWNWARD_PATH} --build release64 {domain_path} {problem_path} {PREFERENCES_PATH} --search \"sfw(non_stop=true, bound={bound}, all_soft_goals=true, quickxplain=false)\""
-        quick = f"{FAST_DOWNWARD_PATH} --build release64 {domain_path} {problem_path} {PREFERENCES_PATH} --search \"sfw(non_stop=true, bound={bound}, all_soft_goals=true, quickxplain=true)\""
+        bounds = [0.25, 0.5, 0.75]
 
-        run_problem(normal)    
-        run_problem(quick)    
+        for bound in bounds:
+            normal = f"{FAST_DOWNWARD_PATH} --build release64 {domain_path} {problem_path} --search \"sfw(non_stop=true, bound={bound * lower_bound}, all_soft_goals=true, quickxplain=false)\""
+            run_problem(normal)    
+
+            # Extract base filename without extension
+            problem_base_path = os.path.splitext(problem_path)[0]
+
+            for i in range(5):
+                preferences_path = f"{problem_base_path}-preferences-{i}.json"
+                quick = f"{FAST_DOWNWARD_PATH} --build release64 {domain_path} {problem_path} {preferences_path} --search \"sfw(non_stop=true, bound={bound * lower_bound}, all_soft_goals=true, quickxplain=true)\""
+                run_problem(quick)    
+            print("-" * 15)
         print("-" * 60)
 
 
