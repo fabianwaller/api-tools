@@ -150,7 +150,7 @@ def get_tags(formalism):
 
 def get_collections(formalism, ipc = None):
     """Return the collections, optionally which are IPC or non-IPC"""
-    res = query('collections/', formalism)
+    res = query('collections', formalism)
     if res['error']:
         print ("Error: %s" % res['message'])
         return []

@@ -2,15 +2,21 @@ import sys
 import json
 import re
 import os
+from generate_random_orders import create_orders
 
 print ("Loading domains..."),
 sys.stdout.flush()
 
 import planning_domains_api as api
 
+suites = []
+
+BOUND = 0.75
+
 # 12 is the collection for all STRIPS IPC domains
 domains = {}
-for dom in api.get_domains(12, "classical"):
+collection_id = 1
+for dom in api.get_domains(collection_id, "classical"):
     # get a single domain
     #dom = api.get_domain(52, "classical")
 
@@ -22,12 +28,13 @@ for dom in api.get_domains(12, "classical"):
     # Map the domain name to the list of domain-problem pairs
     domains[dom['domain_name']] = []
     for p in probs:
-        domains[dom['domain_name']].append((p['domain_path'], p['problem_path']))
+        domains[dom['domain_name']].append((p['domain_path'], p['problem_path'], p['lower_bound']))
 
     for dom in domains:
         for i in range(len(domains[dom]) - 1):
             domain = domains[dom][i][0]
             problem = domains[dom][i][1]
+            lower_bound = domains[dom][i][2]
             print("----------------")
             print("domain", domain)
             print("problem", problem)
@@ -37,6 +44,8 @@ for dom in api.get_domains(12, "classical"):
                     content = file.read()
                     #print(content)
                     goal_match = re.search(r'\(:goal\s+\(AND(.*?)\)\s*\)', content, re.DOTALL | re.IGNORECASE)
+                    if not goal_match:
+                        goal_match = re.search(r'\(:goal\s+(.*?)\s*\)', content, re.DOTALL | re.IGNORECASE)
                     if not goal_match:
                         print("\nNo goal section found in the file.")
                         print(json.dumps(dom, indent=4))
@@ -48,6 +57,18 @@ for dom in api.get_domains(12, "classical"):
                         # print(goal_content)
                         # find all expressions in parentheses that don't contain nested parentheses
                         goal_predicates = re.findall(r'\([^()]+\)', goal_content)
+
+
+                        problem_dir = os.path.dirname(problem)
+                        problem_base = os.path.basename(problem)
+                        problem_name = os.path.splitext(problem_base)[0]
+
+                        if lower_bound is None:
+                            print(f"Skipping problem {problem_name} without lower bound")
+                            continue
+                        if len(goal_predicates) <= 1:
+                            print(f"Skipping problem {problem_name} with {len(goal_predicates)} goals")
+                            continue
 
                         # print("\nExtracted goals:")
                         # print(goal_predicates)
@@ -69,34 +90,37 @@ for dom in api.get_domains(12, "classical"):
                                 goals.append(prefix_notation)
                         
                         # Create partial order constraints where each item >= next item
-                        partial_order = []
-                        for i in range(len(goals) - 1):
-                            partial_order.append([goals[i], goals[i+1]])
+                        all_partial_orders = create_orders(goals)
 
-                        # Create the preferences structure
-                        preferences = {
-                            "partial_order": partial_order
-                        }
+                        for i in range(len(all_partial_orders)):
+                            partial_order = all_partial_orders[i]
+                            preferences = {
+                                "partial_order": partial_order
+                            }
 
-                        if len(goals) != 1 and partial_order == []:
-                            raise ValueError(f"No partial order generated")
+                            if len(goals) != 1 and partial_order == []:
+                                raise ValueError(f"No partial order generated")
 
-                        #print(json.dumps(preferences, indent=4))
+                            #print(json.dumps(preferences, indent=4))
+                            
+                            preferences_file = os.path.join(problem_dir, f"{problem_name}-preferences-{i}.json")
+                            
+                            with open(preferences_file, 'w') as file:
+                                json.dump(preferences, file, indent=2)
 
-                        problem_dir = os.path.dirname(problem)
-                        problem_base = os.path.basename(problem)
-                        problem_name = os.path.splitext(problem_base)[0]
-                        
-                        preferences_file = os.path.join(problem_dir, f"{problem_name}-preferences.json")
-                        
-                        with open(preferences_file, 'w') as file:
-                            json.dump(preferences, file, indent=2)
+                            print(f"Created {preferences_file} with partial order constraints")
 
-                        print(f"Created {preferences_file} with partial order constraints")
+                        domain_name = os.path.basename(problem_dir)
+                        problem_filename = os.path.basename(problem)
+                        rounded_lower_bound = round(BOUND * lower_bound)
+                        suites.append(f"{domain_name}:{problem_filename}:{rounded_lower_bound}")
             except FileNotFoundError:
                 print("The specified file does not exist.")
             except IOError:
                 print("An error occurred while reading the file.")
 
+suites = list(set(suites))
+print("\nDone! Generated preferences for the following problems:")
+print(suites)
+print(f"Total number of problems: {len(suites)}")
 
-        print ("done!")
