@@ -119,18 +119,19 @@ for dom in domains:
         except IOError:
             print("An error occurred while reading the file.")
 
-suites = list(set(suites))
+suites = sorted(list(set(suites)))
 print("\nDone! Generated preferences for the following problems:")
 print(suites)
 print(f"Total number of problems: {len(suites)}")
 
 output_file = "domains_in_suite.txt"
 with open(output_file, 'w') as f:
-    f.write(f"{list(set(domains_in_suite))}\n")
+    f.write(f"{sorted(list(set(domains_in_suite)))}\n")
 print(f"\nWrote used domains to {output_file}")
 
 
 output_file = "suite.txt"
 with open(output_file, 'w') as f:
-    f.write(f"{suites}\n")
+    for instance in suites:
+        f.write(f"{instance}\n")
 print(f"\nWrote suites to {output_file}")
