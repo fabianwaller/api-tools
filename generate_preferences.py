@@ -1,5 +1,6 @@
 import sys
 import json
+import math
 import re
 import os
 from generate_random_orders import create_orders
@@ -12,7 +13,7 @@ import planning_domains_api as api
 suites = []
 domains_in_suite = []
 
-BOUND = 0.75
+BOUND = 0.25
 
 # 12 is the collection for all STRIPS IPC domains
 domains = {}
@@ -111,7 +112,7 @@ for dom in domains:
 
                     domain_name = os.path.basename(problem_dir)
                     problem_filename = os.path.basename(problem)
-                    rounded_lower_bound = round(BOUND * lower_bound)
+                    rounded_lower_bound = math.ceil(BOUND * lower_bound)
                     suites.append(f"{domain_name}:{problem_filename}:{rounded_lower_bound}")
                     domains_in_suite.append(domain_name)
         except FileNotFoundError:
