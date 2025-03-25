@@ -25,11 +25,7 @@ def create_total_order(goals):
     sorted_priorities = sorted(priority_groups.keys())
     
     relations = []
-    
-    # Add self-relations
-    for goal in goals:
-        relations.append([goal, goal])
-    
+        
     # between adjacent priority levels
     for i in range(len(sorted_priorities)-1):
         current_level = sorted_priorities[i]
