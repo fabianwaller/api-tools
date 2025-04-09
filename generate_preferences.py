@@ -13,7 +13,7 @@ import planning_domains_api as api
 suites = []
 domains_in_suite = []
 
-BOUND = 0.25
+BOUND = 0.75
 
 # 12 is the collection for all STRIPS IPC domains
 domains = {}
