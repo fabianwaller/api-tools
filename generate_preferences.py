@@ -128,6 +128,7 @@ print(f"Total number of problems: {len(suites)}")
 output_file = "domains_in_suite.txt"
 with open(output_file, 'w') as f:
     f.write(f"{sorted(list(set(domains_in_suite)))}\n")
+print(f"Total number of domains: {len(set(domains_in_suite))}")
 print(f"\nWrote used domains to {output_file}")
 
 
